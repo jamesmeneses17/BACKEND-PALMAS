@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -14,8 +14,16 @@ export class SalesController {
     @Post()
     @ApiOperation({ summary: 'Registrar un nuevo cliente y su venta inicial' })
     async create(@Body() createSaleDto: CreateSaleDto, @Request() req) {
-        // El ID del usuario viene del JWT (JwtStrategy devuelve { userId: ... })
         const vendedorId = req.user.userId;
         return this.salesService.createSale(createSaleDto, vendedorId);
+    }
+
+    // NUEVO: Recuperar historial del vendedor para alimentar la sección "Mis Ventas"
+    @UseGuards(JwtAuthGuard)
+    @Get('my-sales')
+    @ApiOperation({ summary: 'Obtener historial de ventas del vendedor logueado' })
+    async getMyHistory(@Request() req) {
+        const vendedorId = req.user.userId;
+        return this.salesService.findHistoryByVendedor(vendedorId);
     }
 }

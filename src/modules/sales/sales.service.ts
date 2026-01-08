@@ -1,8 +1,9 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Customer } from '../customers/entities/customer.entity';
 import { Delivery } from './entities/delivery.entity';
 import { CreateSaleDto } from './dtos/create-sale.dto';
+
 @Injectable()
 export class SalesService {
     constructor(private dataSource: DataSource) { }
@@ -69,11 +70,47 @@ export class SalesService {
             return { message: 'Venta registrada con éxito', clienteId: cliente.id };
         } catch (error) {
             await queryRunner.rollbackTransaction();
-            // Ya no es necesario manejar ER_DUP_ENTRY para identificacion/telefono
             console.error('Error transaction sales:', error);
             throw error;
         } finally {
             await queryRunner.release();
         }
+    }
+
+    // NUEVO: Lógica para alimentar la vista de "Mis Ventas"
+    async findHistoryByVendedor(vendedorId: number) {
+        // Buscamos en entregas_iniciales trayendo las relaciones necesarias
+        const history = await this.dataSource.getRepository(Delivery).find({
+            where: { vendedor_id: vendedorId },
+            relations: ['cliente', 'producto'], // Cruce con tablas para nombres y fechas
+            order: { fecha_entrega: 'DESC' }, // Más reciente primero
+            take: 20 // Limitamos a las últimas 20 para rendimiento móvil
+        });
+
+        // Agrupamos por cliente para que el vendedor vea tarjetas de venta claras
+        const grouped = history.reduce((acc, current) => {
+            const fechaKey = current.fecha_entrega.toISOString().split('T')[0];
+            const clienteId = current.cliente_id;
+            const key = `${fechaKey}-${clienteId}`;
+
+            if (!acc[key]) {
+                acc[key] = {
+                    id: current.id,
+                    fecha: current.fecha_entrega,
+                    cliente: current.cliente,
+                    productos: []
+                };
+            }
+
+            acc[key].productos.push({
+                nombre: current.producto.nombre,
+                cantidad: current.cantidad
+            });
+
+            return acc;
+        }, {});
+
+        // Retornamos un array para que el frontend pueda iterar
+        return Object.values(grouped);
     }
 }
