@@ -70,6 +70,23 @@ export class SalesService {
             return { message: 'Venta registrada con éxito', clienteId: cliente.id };
         } catch (error) {
             await queryRunner.rollbackTransaction();
+
+            // Re-hidratamos el chequeo de duplicados por si acaso falla algo en la lógica de upsert 
+            // (ej: intente actualizar un cliente existente asignándole un teléfono que YA TIENE OTRO cliente)
+            if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+                const message = error.sqlMessage || error.message || '';
+
+                if (message.includes('telefono_1')) {
+                    // Si el error es por teléfono, es porque OTRO cliente ya lo tiene
+                    throw new Error('El teléfono principal ya está registrado a nombre de otro cliente.');
+                }
+                if (message.includes('telefono_2')) {
+                    throw new Error('El teléfono secundario ya está registrado.');
+                }
+                // Fallback
+                throw new Error('Error de duplicidad: Ya existe un registro con estos datos.');
+            }
+
             console.error('Error transaction sales:', error);
             throw error;
         } finally {
