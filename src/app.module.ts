@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CustomersModule } from './modules/customers/customers.module';
 import { ProductsModule } from './modules/products/products.module';
+import { SalesModule } from './modules/sales/sales.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { ProductsModule } from './modules/products/products.module';
     UsersModule,
     AuthModule,
     CustomersModule,
-    ProductsModule
+    ProductsModule,
+    SalesModule
   ],
   controllers: [AppController], // <-- FALTABA ESTO
   providers: [AppService],      // <-- FALTABA ESTO

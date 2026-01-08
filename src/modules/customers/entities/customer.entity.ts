@@ -1,21 +1,27 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
 
-@Entity('clientes')
+@Entity('clientes') // Nombre exacto en tu BD
 export class Customer {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ name: 'nombre_cliente', length: 150 })
-    nombre: string;
+    @Column({ name: 'identificacion_nit', unique: true })
+    identificacion_nit: string;
+
+    @Column({ name: 'nombre_cliente' }) // Mapeo exacto
+    nombre_cliente: string;
 
     @Column({ type: 'text' })
     direccion: string;
 
-    @Column({ name: 'telefono_1', length: 20 })
-    telefono: string;
+    @Column({ unique: true })
+    telefono_1: string;
 
-    @Column({ name: 'frecuencia_entrega', length: 50, nullable: true })
-    frecuencia: string;
+    @Column({ nullable: true })
+    telefono_2: string;
+
+    @Column({ nullable: true })
+    frecuencia_entrega: string;
 
     @Column({ type: 'date', nullable: true })
     proxima_visita_sugerida: Date;
@@ -23,6 +29,6 @@ export class Customer {
     @Column({ nullable: true })
     vendedor_id: number;
 
-    @CreateDateColumn({ name: 'fecha_creacion' })
-    fechaCreacion: Date;
+    @CreateDateColumn()
+    fecha_creacion: Date;
 }
